@@ -8,5 +8,6 @@ CREATE TABLE IF NOT EXISTS sync_runs (
  id INTEGER PRIMARY KEY AUTOINCREMENT, ran_at TEXT NOT NULL, source_count INTEGER NOT NULL,
  job_count INTEGER NOT NULL, error_count INTEGER NOT NULL, errors TEXT NOT NULL DEFAULT ''
 );
-CREATE INDEX IF NOT EXISTS jobs_first_seen_idx ON jobs(first_seen);
+CREATE TABLE IF NOT EXISTS source_sync (source TEXT PRIMARY KEY,last_run TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS jobs_posted_idx ON jobs(posted_at);
 CREATE INDEX IF NOT EXISTS jobs_source_idx ON jobs(source,source_id);
