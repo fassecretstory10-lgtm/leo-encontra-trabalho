@@ -58,7 +58,7 @@ export default{
    const now=new Date().toISOString(),id=crypto.randomUUID(),status=String(b.status||'interested');
    const allowed=['interested','preparing','draft_ready','applied','confirmation','interview','test','rejected','offer','withdrawn'];
    if(!allowed.includes(status))return out({error:'Estado inválido'},400);
-   await env.DB.prepare('INSERT INTO applications(id,job_id,status,method,updated_at,notes,cover_letter,cv_version) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(job_id) DO UPDATE SET status=excluded.status,method=excluded.method,updated_at=excluded.updated_at,notes=excluded.notes').bind(id,String(b.job_id),status,String(b.method||'unknown'),now,String(b.notes||''),String(b.cover_letter||''),String(b.cv_version||'')).run();
+   await env.DB.prepare('INSERT INTO applications(id,job_id,status,method,updated_at,notes,cover_letter,cv_version,created_at) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(job_id) DO UPDATE SET status=excluded.status,method=excluded.method,updated_at=excluded.updated_at,notes=excluded.notes').bind(id,String(b.job_id),status,String(b.method||'unknown'),now,String(b.notes||''),String(b.cover_letter||''),String(b.cv_version||''),now).run();
    const app=await env.DB.prepare('SELECT * FROM applications WHERE job_id=?').bind(String(b.job_id)).first();
    await env.DB.prepare('INSERT INTO application_events(application_id,new_status,changed_at,note) VALUES(?,?,?,?)').bind(app.id,status,now,'Registo inicial').run();
    return out({application:app},201);
@@ -75,7 +75,7 @@ export default{
   }
   if(u.pathname==='/api/stats'&&req.method==='GET'){
    const totals=await env.DB.prepare('SELECT COUNT(*) total, SUM(CASE WHEN status IN (\'applied\',\'confirmation\',\'interview\',\'test\',\'rejected\',\'offer\') THEN 1 ELSE 0 END) submitted, SUM(CASE WHEN status IN (\'confirmation\',\'interview\',\'test\',\'offer\') THEN 1 ELSE 0 END) responses, SUM(CASE WHEN status=\'interview\' THEN 1 ELSE 0 END) interviews, SUM(CASE WHEN status=\'rejected\' THEN 1 ELSE 0 END) rejected, SUM(CASE WHEN status=\'offer\' THEN 1 ELSE 0 END) offers FROM applications').first();
-   const monthly=await env.DB.prepare("SELECT substr(updated_at,1,7) month,COUNT(*) total FROM applications GROUP BY substr(updated_at,1,7) ORDER BY month DESC LIMIT 12").all();
+   const monthly=await env.DB.prepare("SELECT substr(created_at,1,7) month,COUNT(*) total FROM applications GROUP BY substr(created_at,1,7) ORDER BY month DESC LIMIT 12").all();
    return out({totals:totals||{},monthly:monthly.results||[]});
   }
   if(u.pathname==='/api/sync'&&req.method==='POST'){const recent=await env.DB.prepare("SELECT ran_at FROM sync_runs ORDER BY id DESC LIMIT 1").first();if(recent?.ran_at&&Date.now()-new Date(recent.ran_at).getTime()<10*60000)return out({error:'A sincronização foi executada há menos de 10 minutos.'},429);return out(await sync(env))}
