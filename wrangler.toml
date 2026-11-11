@@ -7,6 +7,9 @@ directory = "./dist"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
 
+[vars]
+JOB_BOARDS = '''[{"provider":"ashby","slug":"dapper","company":"Dapper"},{"provider":"ashby","slug":"airapps","company":"Air Apps"},{"provider":"ashby","slug":"hostinger","company":"Hostinger"},{"provider":"lever","slug":"websummit","company":"Web Summit"},{"provider":"lever","slug":"aethoshotels","company":"Aethos"},{"provider":"lever","slug":"younited","company":"Younited"},{"provider":"lever","slug":"idt","company":"IDT"},{"provider":"lever","slug":"emma-sleep","company":"Emma – The Sleep Company"},{"provider":"greenhouse","slug":"wppmedia","company":"WPP Media"},{"provider":"greenhouse","slug":"upwork","company":"Upwork"},{"provider":"smartrecruiters","slug":"Devoteam","company":"Devoteam"},{"provider":"smartrecruiters","slug":"Continental","company":"Continental"},{"provider":"smartrecruiters","slug":"Autodoc3","company":"AUTODOC"}]'''
+
 [[d1_databases]]
 binding = "DB"
 database_name = "leo-jobs"
