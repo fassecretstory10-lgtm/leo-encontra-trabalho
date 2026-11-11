@@ -33,7 +33,51 @@ async function sync(env:Env){
 export default{
  async fetch(req:Request,env:Env){const u=new URL(req.url)
   if(u.pathname==='/api/health')return out({ok:true,configuredCompanyBoards:boards(env.JOB_BOARDS).length,publicFeeds:['Jobicy','Remotive'],googleJobsEnabled:!!env.SERPAPI_KEY})
-  if(u.pathname==='/api/jobs'&&req.method==='GET'){const q=(u.searchParams.get('q')||'').trim(),days=Math.min(365,Math.max(1,Number(u.searchParams.get('days')||15)));const r=await env.DB.prepare("SELECT * FROM jobs WHERE is_open=1 AND datetime(first_seen)>=datetime('now',?) AND (?='' OR lower(title||' '||company||' '||location||' '||description) LIKE '%'||lower(?)||'%') ORDER BY COALESCE(posted_at,first_seen) DESC LIMIT 1000").bind('-'+days+' days',q,q).all();const last=await env.DB.prepare('SELECT ran_at,job_count,error_count FROM sync_runs ORDER BY id DESC LIMIT 1').first();return out({jobs:r.results||[],lastSync:last||null})}
+  if(u.pathname==='/api/jobs'&&req.method==='GET'){
+   const q=(u.searchParams.get('q')||'').trim(),days=u.searchParams.get('days')||'15';
+   const dateClause=days==='all'?'1=1':"datetime(COALESCE(posted_at,first_seen))>=datetime('now',?)";
+   const stmt=days==='all'
+    ?env.DB.prepare("SELECT j.*,CASE WHEN s.job_id IS NULL THEN 0 ELSE 1 END AS saved, a.status AS application_status FROM jobs j LEFT JOIN saved_jobs s ON s.job_id=j.id LEFT JOIN applications a ON a.job_id=j.id WHERE (?='' OR lower(j.title||' '||j.company||' '||j.location||' '||j.description) LIKE '%'||lower(?)||'%') ORDER BY COALESCE(j.posted_at,j.first_seen) DESC LIMIT 2000").bind(q,q)
+    :env.DB.prepare("SELECT j.*,CASE WHEN s.job_id IS NULL THEN 0 ELSE 1 END AS saved, a.status AS application_status FROM jobs j LEFT JOIN saved_jobs s ON s.job_id=j.id LEFT JOIN applications a ON a.job_id=j.id WHERE "+dateClause+" AND (?='' OR lower(j.title||' '||j.company||' '||j.location||' '||j.description) LIKE '%'||lower(?)||'%') ORDER BY COALESCE(j.posted_at,j.first_seen) DESC LIMIT 2000").bind('-'+Math.min(365,Math.max(1,Number(days)))+' days',q,q);
+   const r=await stmt.all();const last=await env.DB.prepare('SELECT ran_at,job_count,error_count FROM sync_runs ORDER BY id DESC LIMIT 1').first();
+   return out({jobs:r.results||[],lastSync:last||null,period:days});
+  }
+  if(u.pathname==='/api/saved'&&req.method==='POST'){
+   const body=await req.json() as any;if(!body.job_id)return out({error:'job_id obrigatório'},400);
+   if(body.saved){await env.DB.prepare('INSERT OR IGNORE INTO saved_jobs(job_id,saved_at) VALUES(?,?)').bind(String(body.job_id),new Date().toISOString()).run();}
+   else await env.DB.prepare('DELETE FROM saved_jobs WHERE job_id=?').bind(String(body.job_id)).run();
+   return out({ok:true,saved:!!body.saved});
+  }
+  if(u.pathname==='/api/applications'&&req.method==='GET'){
+   const r=await env.DB.prepare("SELECT a.*,j.title,j.company,j.location,j.url,j.source,j.posted_at FROM applications a JOIN jobs j ON j.id=a.job_id ORDER BY a.updated_at DESC").all();
+   return out({applications:r.results||[]});
+  }
+  if(u.pathname==='/api/applications'&&req.method==='POST'){
+   const b=await req.json() as any;if(!b.job_id)return out({error:'job_id obrigatório'},400);
+   const exists=await env.DB.prepare('SELECT id FROM jobs WHERE id=?').bind(String(b.job_id)).first();if(!exists)return out({error:'Vaga não encontrada'},404);
+   const now=new Date().toISOString(),id=crypto.randomUUID(),status=String(b.status||'interested');
+   const allowed=['interested','preparing','draft_ready','applied','confirmation','interview','test','rejected','offer','withdrawn'];
+   if(!allowed.includes(status))return out({error:'Estado inválido'},400);
+   await env.DB.prepare('INSERT INTO applications(id,job_id,status,method,updated_at,notes,cover_letter,cv_version) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(job_id) DO UPDATE SET status=excluded.status,method=excluded.method,updated_at=excluded.updated_at,notes=excluded.notes').bind(id,String(b.job_id),status,String(b.method||'unknown'),now,String(b.notes||''),String(b.cover_letter||''),String(b.cv_version||'')).run();
+   const app=await env.DB.prepare('SELECT * FROM applications WHERE job_id=?').bind(String(b.job_id)).first();
+   await env.DB.prepare('INSERT INTO application_events(application_id,new_status,changed_at,note) VALUES(?,?,?,?)').bind(app.id,status,now,'Registo inicial').run();
+   return out({application:app},201);
+  }
+  if(u.pathname.startsWith('/api/applications/')&&req.method==='PATCH'){
+   const id=decodeURIComponent(u.pathname.split('/').pop()||''),b=await req.json() as any;
+   const current=await env.DB.prepare('SELECT * FROM applications WHERE id=?').bind(id).first();if(!current)return out({error:'Candidatura não encontrada'},404);
+   const allowed=['interested','preparing','draft_ready','applied','confirmation','interview','test','rejected','offer','withdrawn'],status=String(b.status||current.status);
+   if(!allowed.includes(status))return out({error:'Estado inválido'},400);
+   const now=new Date().toISOString();
+   await env.DB.prepare('UPDATE applications SET status=?,updated_at=?,applied_at=CASE WHEN ? IN (\'applied\',\'confirmation\',\'interview\',\'test\',\'rejected\',\'offer\') THEN COALESCE(applied_at,?) ELSE applied_at END,notes=COALESCE(?,notes) WHERE id=?').bind(status,now,status,now,b.notes??null,id).run();
+   if(status!==current.status)await env.DB.prepare('INSERT INTO application_events(application_id,old_status,new_status,changed_at,note) VALUES(?,?,?,?,?)').bind(id,current.status,status,now,String(b.note||'')).run();
+   return out({application:await env.DB.prepare('SELECT * FROM applications WHERE id=?').bind(id).first()});
+  }
+  if(u.pathname==='/api/stats'&&req.method==='GET'){
+   const totals=await env.DB.prepare('SELECT COUNT(*) total, SUM(CASE WHEN status IN (\'applied\',\'confirmation\',\'interview\',\'test\',\'rejected\',\'offer\') THEN 1 ELSE 0 END) submitted, SUM(CASE WHEN status IN (\'confirmation\',\'interview\',\'test\',\'offer\') THEN 1 ELSE 0 END) responses, SUM(CASE WHEN status=\'interview\' THEN 1 ELSE 0 END) interviews, SUM(CASE WHEN status=\'rejected\' THEN 1 ELSE 0 END) rejected, SUM(CASE WHEN status=\'offer\' THEN 1 ELSE 0 END) offers FROM applications').first();
+   const monthly=await env.DB.prepare("SELECT substr(updated_at,1,7) month,COUNT(*) total FROM applications GROUP BY substr(updated_at,1,7) ORDER BY month DESC LIMIT 12").all();
+   return out({totals:totals||{},monthly:monthly.results||[]});
+  }
   if(u.pathname==='/api/sync'&&req.method==='POST'){const recent=await env.DB.prepare("SELECT ran_at FROM sync_runs ORDER BY id DESC LIMIT 1").first();if(recent?.ran_at&&Date.now()-new Date(recent.ran_at).getTime()<10*60000)return out({error:'A sincronização foi executada há menos de 10 minutos.'},429);return out(await sync(env))}
   return env.ASSETS.fetch(req)
  },
