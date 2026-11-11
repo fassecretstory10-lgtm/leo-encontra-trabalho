@@ -7,6 +7,7 @@ Personal job discovery and application tracker.
 The app uses a Cloudflare Worker API and D1 database. It does not scrape sites or invent vacancies.
 
 ### Integrated public sources
+- **Google Jobs via SerpApi**: searches Portugal, Netherlands, Switzerland and Dubai at 09:00 Lisbon time. Requires a SerpApi account/API key stored as the Cloudflare Worker secret `SERPAPI_KEY`. This is a paid third-party search provider; no searches run and no charges accrue until the key is configured. Google Jobs can surface listings indexed from job portals, but this is not an official LinkedIn or Indeed API.
 - **Jobicy API**: public remote jobs feed, Europe region; no API key. Keep Jobicy as the source and preserve its canonical listing URL. Poll no more than once per hour.
 - **Remotive API**: public remote jobs feed; delayed by approximately 24 hours. Attribute Remotive and link to its original listing. Poll no more than four times per day.
 - **Employer career pages via public ATS job-board APIs**: Greenhouse, Lever, Ashby, SmartRecruiters and Workable. These return public employer-posted vacancies without requiring applicant credentials. The first verified employer boards are already configured in `wrangler.toml`: Dapper, Air Apps, Hostinger, Web Summit, Aethos, Younited, IDT, Emma, WPP Media, Upwork, Devoteam, Continental and AUTODOC. The registry can be expanded with more verified employer boards.
@@ -22,7 +23,7 @@ LinkedIn Jobs, Indeed, Google Jobs, EURES, Net-Empregos, Carga de Trabalhos, SAP
    ```bash
    npx wrangler d1 migrations apply leo-jobs --remote
    ```
-4. The `JOB_BOARDS` list is seeded in `wrangler.toml`. To expand it, add only verified company board identifiers. Example:
+4. Optionally add `SERPAPI_KEY` as a Worker secret to enable the daily Google Jobs search. The provider has its own paid plans and quotas. The `JOB_BOARDS` list is seeded in `wrangler.toml`. To expand it, add only verified company board identifiers. Example:
    ```json
    [
      {"provider":"greenhouse","slug":"verified-board-slug","company":"Verified employer"},
@@ -33,7 +34,7 @@ LinkedIn Jobs, Indeed, Google Jobs, EURES, Net-Empregos, Carga de Trabalhos, SAP
    The example values above are placeholders only; the initial configured list is the verified list named earlier in this README.
 5. Deploy with `npm run build` then `npx wrangler deploy`.
 
-The Worker has a 30-minute Cron schedule for configured employer ATS boards. Jobicy is limited to hourly polling and Remotive to six-hour intervals to respect their published API terms. This does not mean every portal or employer is covered.
+The Worker has a 30-minute Cron schedule for configured employer ATS boards. Google Jobs runs once daily at 09:00 Lisbon local time if `SERPAPI_KEY` is configured. Jobicy is limited to hourly polling and Remotive to six-hour intervals to respect their published API terms. This does not mean every portal or employer is covered.
 
 ## API
 - `GET /api/health` — API and configured employer board count.
