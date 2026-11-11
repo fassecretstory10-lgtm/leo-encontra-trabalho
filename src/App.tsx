@@ -8,8 +8,8 @@ const read = <T,>(key:string, fallback:T):T => { try { const v=localStorage.getI
 const tabs=[['Hoje',House],['Pesquisar',Search],['Guardados',Bookmark],['Candidaturas',BriefcaseBusiness],['Perfil',UserRound]] as const
 function App(){
  const [tab,setTab]=useState('Hoje')
- const [jobs,setJobs]=useState<Job[]>(()=>read('leo.jobs',[]))
- const [profile,setProfile]=useState<Profile>(()=>read('leo.profile',emptyProfile))
+ const [jobs,setJobs]=useState<Job[]>(()=>read<Job[]>('leo.jobs',[]))
+ const [profile,setProfile]=useState<Profile>(()=>read<Profile>('leo.profile',emptyProfile))
  const [query,setQuery]=useState('')
  const [period,setPeriod]=useState('15')
  const [showAdd,setShowAdd]=useState(false)
