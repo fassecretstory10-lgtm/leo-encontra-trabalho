@@ -49,7 +49,7 @@ npm run dev
 npm run build
 ```
 
-## Application workflow\nThe dashboard now separates discovery, saved vacancies, and actual applications. The 15-day view is only a filter; `days=all` keeps older vacancies available in the archive. Saved vacancies and application records are persisted in D1. Statistics are calculated from recorded applications, not demo data. Outlook draft creation with a tailored cover letter and CV attachment is not yet connected; the interface must not imply that an application was emailed or submitted.\n\n## Data integrity
+## Application workflow\nThe dashboard separates discovery, saved vacancies, and actual applications. The 15-day view is only a filter; `days=all` keeps older vacancies available in the archive. Saved vacancies and application records are persisted in D1. When a user selects “Quero concorrer”, the app asks for the application channel (company website, email, LinkedIn Easy Apply, external LinkedIn application, or other) and optional notes, then records the intention as “Quero concorrer”. It does not mark the vacancy as submitted. The application channel and last update are shown in the tracking view. Statistics are calculated from recorded applications, not demo data. Outlook draft creation with a tailored cover letter and CV attachment is not yet connected; no email is sent automatically.\n\n## Data integrity
 - No demo vacancies are seeded.
 - Keep source attribution and original vacancy links.
 - Preserve first-seen timestamps and deduplicate by source + listing ID.
