@@ -69,7 +69,7 @@ export default{
    const allowed=['interested','preparing','draft_ready','applied','confirmation','interview','test','rejected','offer','withdrawn'],status=String(b.status||current.status);
    if(!allowed.includes(status))return out({error:'Estado inválido'},400);
    const now=new Date().toISOString();
-   await env.DB.prepare('UPDATE applications SET status=?,updated_at=?,applied_at=CASE WHEN ? IN (\'applied\',\'confirmation\',\'interview\',\'test\',\'rejected\',\'offer\') THEN COALESCE(applied_at,?) ELSE applied_at END,notes=COALESCE(?,notes) WHERE id=?').bind(status,now,status,now,b.notes??null,id).run();
+   await env.DB.prepare('UPDATE applications SET status=?,updated_at=?,applied_at=CASE WHEN ? IN (\'applied\',\'confirmation\',\'interview\',\'test\',\'rejected\',\'offer\') THEN COALESCE(applied_at,?) ELSE applied_at END,notes=COALESCE(?,notes),cover_letter=COALESCE(?,cover_letter) WHERE id=?').bind(status,now,status,now,b.notes??null,b.cover_letter??null,id).run();
    if(status!==current.status)await env.DB.prepare('INSERT INTO application_events(application_id,old_status,new_status,changed_at,note) VALUES(?,?,?,?,?)').bind(id,current.status,status,now,String(b.note||'')).run();
    return out({application:await env.DB.prepare('SELECT * FROM applications WHERE id=?').bind(id).first()});
   }
