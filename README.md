@@ -9,7 +9,7 @@ The app uses a Cloudflare Worker API and D1 database. It does not scrape sites o
 ### Integrated public sources
 - **Jobicy API**: public remote jobs feed, Europe region; no API key. Keep Jobicy as the source and preserve its canonical listing URL. Poll no more than once per hour.
 - **Remotive API**: public remote jobs feed; delayed by approximately 24 hours. Attribute Remotive and link to its original listing. Poll no more than four times per day.
-- **Employer career pages via public ATS job-board APIs**: Greenhouse, Lever, Ashby, SmartRecruiters and Workable. These return public employer-posted vacancies without requiring applicant credentials. Add each employer's verified ATS board slug to the `JOB_BOARDS` Worker variable.
+- **Employer career pages via public ATS job-board APIs**: Greenhouse, Lever, Ashby, SmartRecruiters and Workable. These return public employer-posted vacancies without requiring applicant credentials. The first verified employer boards are already configured in `wrangler.toml`: Dapper, Air Apps, Hostinger, Web Summit, Aethos, Younited, IDT, Emma, WPP Media, Upwork, Devoteam, Continental and AUTODOC. The registry can be expanded with more verified employer boards.
 
 ### Sources not yet connected
 LinkedIn Jobs, Indeed, Google Jobs, EURES, Net-Empregos, Carga de Trabalhos, SAPO Emprego and other portals do not all provide a suitable unrestricted public API for this app. They need an authorized API, feed, or a compliant search provider integration. Do not scrape or bypass access controls or site terms. The Career Radar ChatGPT plugin is a ChatGPT-side search workflow, not an API key or embeddable backend service; its search, verification, language, seniority, fit and anti-fabrication rules are being used as the product methodology.
@@ -22,7 +22,7 @@ LinkedIn Jobs, Indeed, Google Jobs, EURES, Net-Empregos, Carga de Trabalhos, SAP
    ```bash
    npx wrangler d1 migrations apply leo-jobs --remote
    ```
-4. In Worker Settings → Variables, add `JOB_BOARDS` as JSON. Only add verified company board identifiers. Example:
+4. The `JOB_BOARDS` list is seeded in `wrangler.toml`. To expand it, add only verified company board identifiers. Example:
    ```json
    [
      {"provider":"greenhouse","slug":"verified-board-slug","company":"Verified employer"},
@@ -30,7 +30,7 @@ LinkedIn Jobs, Indeed, Google Jobs, EURES, Net-Empregos, Carga de Trabalhos, SAP
      {"provider":"ashby","slug":"verified-board-slug","company":"Verified employer"}
    ]
    ```
-   Replace the example values with verified employer board slugs; they are not real configured sources.
+   The example values above are placeholders only; the initial configured list is the verified list named earlier in this README.
 5. Deploy with `npm run build` then `npx wrangler deploy`.
 
 The Worker has a 30-minute Cron schedule for configured employer ATS boards. Jobicy is limited to hourly polling and Remotive to six-hour intervals to respect their published API terms. This does not mean every portal or employer is covered.
