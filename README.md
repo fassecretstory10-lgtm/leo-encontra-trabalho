@@ -49,7 +49,7 @@ npm run dev
 npm run build
 ```
 
-## Data integrity
+## Application workflow\nThe dashboard now separates discovery, saved vacancies, and actual applications. The 15-day view is only a filter; `days=all` keeps older vacancies available in the archive. Saved vacancies and application records are persisted in D1. Statistics are calculated from recorded applications, not demo data. Outlook draft creation with a tailored cover letter and CV attachment is not yet connected; the interface must not imply that an application was emailed or submitted.\n\n## Data integrity
 - No demo vacancies are seeded.
 - Keep source attribution and original vacancy links.
 - Preserve first-seen timestamps and deduplicate by source + listing ID.
