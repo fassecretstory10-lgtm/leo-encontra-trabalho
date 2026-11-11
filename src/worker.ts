@@ -1,4 +1,4 @@
-export interface Env { DB:D1Database; JOB_BOARDS?:string }
+type Env = { DB:any; ASSETS:{fetch:(request:Request)=>Promise<Response>}; JOB_BOARDS?:string }
 type Board={provider:'greenhouse'|'lever'|'ashby'|'smartrecruiters'|'workable';slug:string;company:string}
 const response=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}})
 const boards=(s?:string):Board[]=>{try{return s?JSON.parse(s):[]}catch{return[]}}
@@ -34,7 +34,7 @@ export default{
   if(u.pathname==='/api/health')return response({ok:true,configuredBoards:boards(env.JOB_BOARDS).length})
   if(u.pathname==='/api/jobs'&&req.method==='GET'){const q=(u.searchParams.get('q')||'').trim(),days=Math.min(365,Math.max(1,Number(u.searchParams.get('days')||15)));const r=await env.DB.prepare("SELECT * FROM jobs WHERE is_open=1 AND datetime(first_seen)>=datetime('now',?) AND (?='' OR lower(title||' '||company||' '||location||' '||description) LIKE '%'||lower(?)||'%') ORDER BY COALESCE(posted_at,first_seen) DESC LIMIT 1000").bind('-'+days+' days',q,q).all();return response({jobs:r.results||[]})}
   if(u.pathname==='/api/sync'&&req.method==='POST')return response(await sync(env))
-  return response({error:'Not found'},404)
+  if(env.ASSETS)return env.ASSETS.fetch(req)\n  return response({error:'Not found'},404)
  },
- async scheduled(_c:ScheduledController,env:Env,ctx:ExecutionContext){ctx.waitUntil(sync(env))}
+ async scheduled(_c:any,env:Env,ctx:any){ctx.waitUntil(sync(env))}
 }
