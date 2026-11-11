@@ -18,7 +18,7 @@ LinkedIn Jobs, Indeed, Google Jobs, EURES, Net-Empregos, Carga de Trabalhos, SAP
 ## Cloudflare setup required
 
 1. Create a D1 database named `leo-jobs` in Cloudflare.
-2. Replace `REPLACE_WITH_D1_DATABASE_ID` in `wrangler.toml` with the database ID returned by Cloudflare.
+2. Replace `REPLACE_WITH_D1_DATABASE_ID` in `wrangler.toml` with the database ID returned by Cloudflare. Deployment is blocked until this value is configured.
 3. Apply the schema:
    ```bash
    npx wrangler d1 migrations apply leo-jobs --remote
@@ -49,7 +49,10 @@ npm run dev
 npm run build
 ```
 
-## Application workflow\nThe dashboard separates discovery, saved vacancies, and actual applications. The 15-day view is only a filter; `days=all` keeps older vacancies available in the archive. Saved vacancies and application records are persisted in D1. When a user selects “Quero concorrer”, the app asks for the application channel (company website, email, LinkedIn Easy Apply, external LinkedIn application, or other) and optional notes, then records the intention as “Quero concorrer”. It does not mark the vacancy as submitted. The application channel and last update are shown in the tracking view. Statistics are calculated from recorded applications, not demo data. Outlook draft creation with a tailored cover letter and CV attachment is not yet connected; no email is sent automatically.\n\n## Data integrity
+## Application workflow
+The dashboard separates discovery, saved vacancies, and actual applications. The 15-day view is only a filter; `days=all` keeps older vacancies available in the archive. Saved vacancies and application records are persisted in D1. When a user selects “Quero concorrer”, the app asks for the application channel (company website, email, LinkedIn Easy Apply, external LinkedIn application, or other) and optional notes, then records the intention as “Quero concorrer”. It does not mark the vacancy as submitted. The application channel and last update are shown in the tracking view. Statistics are calculated from recorded applications, not demo data. A first tailored cover-letter draft can be generated from the vacancy title, employer and description, edited by the user, stored with the application, and printed/exported to PDF. The generated text is a starting point and must be reviewed. Outlook draft creation with the CV attached still requires a separately configured Microsoft Graph OAuth integration; no email is sent automatically.
+
+## Data integrity
 - No demo vacancies are seeded.
 - Keep source attribution and original vacancy links.
 - Preserve first-seen timestamps and deduplicate by source + listing ID.
