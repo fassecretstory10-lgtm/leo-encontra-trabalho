@@ -1,6 +1,17 @@
 name = "leo-encontra-trabalho"
+main = "src/worker.ts"
 compatibility_date = "2026-11-11"
 
 [assets]
 directory = "./dist"
+binding = "ASSETS"
 not_found_handling = "single-page-application"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "leo-jobs"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[triggers]
+crons = ["*/30 * * * *"]
