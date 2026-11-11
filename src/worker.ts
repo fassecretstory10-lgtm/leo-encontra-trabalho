@@ -58,7 +58,7 @@ export default{
    const now=new Date().toISOString(),id=crypto.randomUUID(),status=String(b.status||'interested');
    const allowed=['interested','preparing','draft_ready','applied','confirmation','interview','test','rejected','offer','withdrawn'];
    if(!allowed.includes(status))return out({error:'Estado inválido'},400);
-   await env.DB.prepare('INSERT INTO applications(id,job_id,status,method,updated_at,notes,cover_letter,cv_version,created_at) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(job_id) DO UPDATE SET status=excluded.status,method=excluded.method,updated_at=excluded.updated_at,notes=excluded.notes').bind(id,String(b.job_id),status,String(b.method||'unknown'),now,String(b.notes||''),String(b.cover_letter||''),String(b.cv_version||''),now).run();
+   await env.DB.prepare('INSERT INTO applications(id,job_id,status,method,updated_at,notes,cover_letter,cv_version,created_at) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(job_id) DO UPDATE SET status=excluded.status,method=excluded.method,updated_at=excluded.updated_at,notes=excluded.notes,cover_letter=excluded.cover_letter').bind(id,String(b.job_id),status,String(b.method||'unknown'),now,String(b.notes||''),String(b.cover_letter||''),String(b.cv_version||''),now).run();
    const app=await env.DB.prepare('SELECT * FROM applications WHERE job_id=?').bind(String(b.job_id)).first();
    await env.DB.prepare('INSERT INTO application_events(application_id,new_status,changed_at,note) VALUES(?,?,?,?)').bind(app.id,status,now,'Registo inicial').run();
    return out({application:app},201);
