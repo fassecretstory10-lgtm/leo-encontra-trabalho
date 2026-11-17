@@ -17,7 +17,7 @@ async function fetchBoard(b:Board){let rows:any[]=[];const slug=encodeURICompone
 async function feedDue(env:Env,source:string,minutes:number){const row=await env.DB.prepare('SELECT last_run FROM source_sync WHERE source=?').bind(source).first();return !row?.last_run||Date.now()-new Date(row.last_run).getTime()>=minutes*60000}
 async function markFeed(env:Env,source:string){await env.DB.prepare('INSERT INTO source_sync(source,last_run) VALUES(?,?) ON CONFLICT(source) DO UPDATE SET last_run=excluded.last_run').bind(source,new Date().toISOString()).run()}
 async function googleJobs(env:Env){
- const places=['Portugal','Netherlands','Switzerland','Dubai, United Arab Emirates'];let count=0
+ const places=['Lisbon, Portugal','Coimbra, Portugal','Porto, Portugal','Netherlands','Switzerland','Denmark','Dubai, United Arab Emirates'];let count=0
  for(const place of places){const p=new URLSearchParams({engine:'google_jobs',q:'junior marketing communications content social media branding employer branding creative AI',location:place,api_key:env.SERPAPI_KEY!,hl:'en'});const d=await json('https://serpapi.com/search.json?'+p.toString());for(const r of d.jobs_results||[]){const id=String(r.job_id||r.share_link||r.title+'-'+r.company_name);const apply=r.apply_options?.[0]?.link||r.share_link||'';if(!apply)continue;const now=new Date().toISOString();await upsert(env,{id:'googlejobs:'+id,source:'Google Jobs',source_id:id,title:r.title||'',company:r.company_name||'',location:r.location||place,work_mode:r.detected_extensions?.work_from_home?'Remoto':'Não indicado',salary:r.detected_extensions?.salary||'Não divulgado',description:clean(r.description||''),url:apply,posted_at:null,apply_url:apply,language:'',first_seen:now,last_seen:now});count++}}
  return count
 }
