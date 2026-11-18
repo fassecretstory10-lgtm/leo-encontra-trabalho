@@ -74,7 +74,7 @@ export default{
    return out({application:await env.DB.prepare('SELECT * FROM applications WHERE id=?').bind(id).first()});
   }
   if(u.pathname==='/api/stats'&&req.method==='GET'){
-   const totals=await env.DB.prepare('SELECT COUNT(*) total, SUM(CASE WHEN status IN (\'applied\',\'confirmation\',\'interview\',\'test\',\'rejected\',\'offer\') THEN 1 ELSE 0 END) submitted, SUM(CASE WHEN status IN (\'confirmation\',\'interview\',\'test\',\'offer\') THEN 1 ELSE 0 END) responses, SUM(CASE WHEN status=\'interview\' THEN 1 ELSE 0 END) interviews, SUM(CASE WHEN status=\'rejected\' THEN 1 ELSE 0 END) rejected, SUM(CASE WHEN status=\'offer\' THEN 1 ELSE 0 END) offers FROM applications').first();
+   const totals=await env.DB.prepare('SELECT COUNT(*) total, SUM(CASE WHEN status IN (\'applied\',\'confirmation\',\'interview\',\'test\',\'rejected\',\'offer\') THEN 1 ELSE 0 END) submitted, SUM(CASE WHEN status IN (\'confirmation\',\'interview\',\'test\',\'offer\') THEN 1 ELSE 0 END) responses, SUM(CASE WHEN status=\'interview\' THEN 1 ELSE 0 END) interviews, SUM(CASE WHEN status=\'rejected\' THEN 1 ELSE 0 END) rejected, SUM(CASE WHEN status=\'offer\' THEN 1 ELSE 0 END) offers, SUM(CASE WHEN status IN (\'interested\',\'preparing\',\'draft_ready\',\'applied\',\'confirmation\') THEN 1 ELSE 0 END) pending FROM applications').first();
    const monthly=await env.DB.prepare("SELECT substr(created_at,1,7) month,COUNT(*) total FROM applications GROUP BY substr(created_at,1,7) ORDER BY month DESC LIMIT 12").all();
    return out({totals:totals||{},monthly:monthly.results||[]});
   }
