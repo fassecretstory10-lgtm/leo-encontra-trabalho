@@ -13,7 +13,7 @@ JOB_BOARDS = '''[{"provider":"ashby","slug":"dapper","company":"Dapper"},{"provi
 [[d1_databases]]
 binding = "DB"
 database_name = "leo-jobs"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "560b5144-0752-4b6f-86e4-091e39cabc23"
 migrations_dir = "migrations"
 
 [triggers]
